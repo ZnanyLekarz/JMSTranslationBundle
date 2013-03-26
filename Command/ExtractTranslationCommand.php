@@ -115,10 +115,10 @@ class ExtractTranslationCommand extends ContainerAwareCommand
             $updater->process($config);
         }
 
-        $output->writeln('done!');
-
 		$this->cacheClear($output);
-    }
+
+		$output->writeln('done!');
+	}
 
     private function updateWithInput(InputInterface $input, ConfigBuilder $builder)
     {
