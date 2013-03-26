@@ -21,6 +21,7 @@ namespace JMS\TranslationBundle\Command;
 use JMS\TranslationBundle\Translation\ConfigBuilder;
 use JMS\TranslationBundle\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\ArrayInput;
 use JMS\TranslationBundle\Translation\Config;
 use JMS\TranslationBundle\Logger\OutputLogger;
 use Symfony\Component\Console\Input\InputOption;
@@ -55,6 +56,7 @@ class ExtractTranslationCommand extends ContainerAwareCommand
             ->addOption('output-format', null, InputOption::VALUE_REQUIRED, 'The output format that should be used (in most cases, it is better to change only the default-output-format).')
             ->addOption('default-output-format', null, InputOption::VALUE_REQUIRED, 'The default output format (defaults to xliff).')
             ->addOption('keep', null, InputOption::VALUE_NONE, 'Define if the updater service should keep the old translation (defaults to false).')
+            ->addOption('merge', null, InputOption::VALUE_OPTIONAL, 'Define if the updater service should merge the old translation with new (defaults to true).')
             ->addOption('external-translations-dir', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED , 'Load external translation ressources')
         ;
     }
@@ -114,6 +116,8 @@ class ExtractTranslationCommand extends ContainerAwareCommand
         }
 
         $output->writeln('done!');
+
+		$this->cacheClear($output);
     }
 
     private function updateWithInput(InputInterface $input, ConfigBuilder $builder)
@@ -185,5 +189,24 @@ class ExtractTranslationCommand extends ContainerAwareCommand
         if ($loadResource = $input->getOption('external-translations-dir')) {
             $builder->setLoadResources($loadResource);
         }
+
+		if ($input->hasParameterOption('--merge') || $input->hasParameterOption('--merge=true')) {
+			$builder->setDoMerge(true);
+		} else if ($input->hasParameterOption('--merge=false')) {
+			$builder->setDoMerge(false);
+		}
     }
+
+	protected function cacheClear(OutputInterface $output)
+	{
+		$command = $this->getApplication()->find('cache:clear');
+
+		$arguments = array(
+			'command' => 'cache:clear',
+			'--no-warmup' => true,
+		);
+
+		$input = new ArrayInput($arguments);
+		$returnCode = $command->run($input, $output);
+	}
 }

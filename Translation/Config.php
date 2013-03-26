@@ -44,8 +44,9 @@ final class Config
     private $keepOldMessages;
     private $loadResources;
 
+	private $doMerge = true;
 
-    public function __construct($translationsDir, $locale, array $ignoredDomains, array $domains, $outputFormat, $defaultOutputFormat, array $scanDirs, array $excludedDirs, array $excludedNames, array $enabledExtractors, $keepOldMessages, array $loadResources)
+    public function __construct($translationsDir, $locale, array $ignoredDomains, array $domains, $outputFormat, $defaultOutputFormat, array $scanDirs, array $excludedDirs, array $excludedNames, array $enabledExtractors, $keepOldMessages, array $loadResources, $doMerge)
     {
         if (empty($translationsDir)) {
             throw new InvalidArgumentException('The directory where translations are must be set.');
@@ -85,6 +86,7 @@ final class Config
         $this->enabledExtractors = $enabledExtractors;
         $this->keepOldMessages = $keepOldMessages;
         $this->loadResources = $loadResources;
+        $this->doMerge = $doMerge;
     }
 
     /**
@@ -208,4 +210,9 @@ final class Config
     {
         return $this->loadResources;
     }
+
+	public function getDoMerge()
+	{
+		return $this->doMerge;
+	}
 }
