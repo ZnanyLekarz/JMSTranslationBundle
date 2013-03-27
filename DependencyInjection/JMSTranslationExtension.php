@@ -93,6 +93,10 @@ class JMSTranslationExtension extends Extension
                 $def->addMethodCall('setLoadResources', array($extractConfig['external_translations_dirs']));
             }
 
+			if (isset($extractConfig['merge'])) {
+                $def->addMethodCall('setDoMerge', array($extractConfig['merge']));
+            }
+
             $requests[$name] = $def;
         }
 

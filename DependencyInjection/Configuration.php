@@ -109,6 +109,7 @@ class Configuration implements ConfigurationInterface
                                 ->end()
                                 ->scalarNode('output_dir')->isRequired()->cannotBeEmpty()->end()
                                 ->scalarNode('keep')->defaultValue(false)->end()
+                                ->scalarNode('merge')->defaultValue(true)->end()
                             ->end()
                         ->end()
                     ->end()
