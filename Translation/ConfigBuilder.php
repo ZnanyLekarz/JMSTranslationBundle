@@ -32,6 +32,7 @@ final class ConfigBuilder
     private $enabledExtractors = array();
     private $keepOldTranslations = false;
     private $loadResources = array();
+    private $doMerge = true;
 
     /**
      * @static
@@ -188,6 +189,13 @@ final class ConfigBuilder
         return $this;
     }
 
+	public function setDoMerge($value)
+	{
+		$this->doMerge = $value;
+
+		return $this;
+	}
+
     public function getConfig()
     {
         return new Config(
@@ -202,7 +210,8 @@ final class ConfigBuilder
             $this->excludedNames,
             $this->enabledExtractors,
             $this->keepOldTranslations,
-            $this->loadResources
+            $this->loadResources,
+			$this->doMerge
         );
     }
 

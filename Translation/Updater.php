@@ -240,7 +240,10 @@ class Updater
                     continue;
                 }
 
-                $message->mergeExisting($this->existingCatalogue->get($message->getId(), $message->getDomain()));
+				if ($this->config->getDoMerge() === true)
+				{
+                	$message->mergeExisting($this->existingCatalogue->get($message->getId(), $message->getDomain()));
+				}
             }
         }
 
@@ -256,4 +259,12 @@ class Updater
             }
         }
     }
+
+	/**
+	 * @return Config
+	 */
+	public function getConfig()
+	{
+		return $this->config;
+	}
 }

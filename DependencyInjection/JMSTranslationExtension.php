@@ -34,6 +34,7 @@ class JMSTranslationExtension extends Extension
         $loader->load('services.xml');
 
         $container->setParameter('jms_translation.source_language', $config['source_language']);
+        $container->setParameter('jms_translation.locales', $config['locales']);
 
         $requests = array();
         foreach ($config['configs'] as $name => $extractConfig) {
@@ -90,6 +91,10 @@ class JMSTranslationExtension extends Extension
 
             if (isset($extractConfig['external_translations_dirs'])) {
                 $def->addMethodCall('setLoadResources', array($extractConfig['external_translations_dirs']));
+            }
+
+			if (isset($extractConfig['merge'])) {
+                $def->addMethodCall('setDoMerge', array($extractConfig['merge']));
             }
 
             $requests[$name] = $def;

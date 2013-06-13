@@ -21,6 +21,7 @@ namespace JMS\TranslationBundle\Command;
 use JMS\TranslationBundle\Translation\ConfigBuilder;
 use JMS\TranslationBundle\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\ArrayInput;
 use JMS\TranslationBundle\Translation\Config;
 use JMS\TranslationBundle\Logger\OutputLogger;
 use Symfony\Component\Console\Input\InputOption;
@@ -40,7 +41,7 @@ class ExtractTranslationCommand extends ContainerAwareCommand
         $this
             ->setName('translation:extract')
             ->setDescription('Extracts translation messages from your code.')
-            ->addArgument('locale', InputArgument::REQUIRED, 'The locale for which to extract messages.')
+            ->addArgument('locales', InputArgument::IS_ARRAY, 'The locales for which to extract messages.')
             ->addOption('enable-extractor', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'The alias of an extractor which should be enabled.')
             ->addOption('disable-extractor', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'The alias of an extractor which should be disabled (only required for overriding config values).')
             ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'The config to use')
@@ -55,6 +56,7 @@ class ExtractTranslationCommand extends ContainerAwareCommand
             ->addOption('output-format', null, InputOption::VALUE_REQUIRED, 'The output format that should be used (in most cases, it is better to change only the default-output-format).')
             ->addOption('default-output-format', null, InputOption::VALUE_REQUIRED, 'The default output format (defaults to xliff).')
             ->addOption('keep', null, InputOption::VALUE_NONE, 'Define if the updater service should keep the old translation (defaults to false).')
+            ->addOption('merge', null, InputOption::VALUE_OPTIONAL, 'Define if the updater service should merge the old translation with new (defaults to true).')
             ->addOption('external-translations-dir', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED , 'Load external translation ressources')
         ;
     }
@@ -65,44 +67,60 @@ class ExtractTranslationCommand extends ContainerAwareCommand
                        $this->getContainer()->get('jms_translation.config_factory')->getBuilder($input->getOption('config'))
                        : new ConfigBuilder();
 
-        $config = $this->getConfigFromInput($input, $builder);
+        $this->updateWithInput($input, $builder);
 
-        $output->writeln(sprintf('Keep old translations: <info>%s</info>', $config->isKeepOldMessages() ? 'Yes' : 'No'));
-        $output->writeln(sprintf('Output-Path: <info>%s</info>', $config->getTranslationsDir()));
-        $output->writeln(sprintf('Directories: <info>%s</info>', implode(', ', $config->getScanDirs())));
-        $output->writeln(sprintf('Excluded Directories: <info>%s</info>', $config->getExcludedDirs() ? implode(', ', $config->getExcludedDirs()) : '# none #'));
-        $output->writeln(sprintf('Excluded Names: <info>%s</info>', $config->getExcludedNames() ? implode(', ', $config->getExcludedNames()) : '# none #'));
-        $output->writeln(sprintf('Output-Format: <info>%s</info>', $config->getOutputFormat() ? $config->getOutputFormat() : '# whatever is present, if nothing then '.$config->getDefaultOutputFormat().' #'));
-        $output->writeln(sprintf('Custom Extractors: <info>%s</info>', $config->getEnabledExtractors() ? implode(', ', array_keys($config->getEnabledExtractors())) : '# none #'));
-        $output->writeln('============================================================');
-
-        $updater = $this->getContainer()->get('jms_translation.updater');
-        $updater->setLogger($logger = new OutputLogger($output));
-
-        if (!$input->getOption('verbose')) {
-            $logger->setLevel(OutputLogger::ALL ^ OutputLogger::DEBUG);
+        $locales = $input->getArgument('locales');
+        if (empty($locales)) {
+            $locales = $this->getContainer()->getParameter('jms_translation.locales');
         }
 
-        if ($input->getOption('dry-run')) {
-            $changeSet = $updater->getChangeSet($config);
+        if (empty($locales)) {
+            throw new \LogicException('No locales were given, and no locales are configured.');
+        }
 
-            $output->writeln('Added Messages: '.implode(', ', array_keys($changeSet->getAddedMessages())));
+        foreach ($locales as $locale) {
+            $config = $builder->setLocale($locale)->getConfig();
 
-            if ($config->isKeepOldMessages()) {
-                $output->writeln('Deleted Messages: # none as "Keep Old Translations" is true #');
-            } else {
-                $output->writeln('Deleted Messages: '.implode(', ', array_keys($changeSet->getDeletedMessages())));
+            $output->writeln(sprintf('Extracting Translations for locale <info>%s</info>', $locale));
+            $output->writeln(sprintf('Keep old translations: <info>%s</info>', $config->isKeepOldMessages() ? 'Yes' : 'No'));
+            $output->writeln(sprintf('Output-Path: <info>%s</info>', $config->getTranslationsDir()));
+            $output->writeln(sprintf('Directories: <info>%s</info>', implode(', ', $config->getScanDirs())));
+            $output->writeln(sprintf('Excluded Directories: <info>%s</info>', $config->getExcludedDirs() ? implode(', ', $config->getExcludedDirs()) : '# none #'));
+            $output->writeln(sprintf('Excluded Names: <info>%s</info>', $config->getExcludedNames() ? implode(', ', $config->getExcludedNames()) : '# none #'));
+            $output->writeln(sprintf('Output-Format: <info>%s</info>', $config->getOutputFormat() ? $config->getOutputFormat() : '# whatever is present, if nothing then '.$config->getDefaultOutputFormat().' #'));
+            $output->writeln(sprintf('Custom Extractors: <info>%s</info>', $config->getEnabledExtractors() ? implode(', ', array_keys($config->getEnabledExtractors())) : '# none #'));
+            $output->writeln('============================================================');
+
+            $updater = $this->getContainer()->get('jms_translation.updater');
+            $updater->setLogger($logger = new OutputLogger($output));
+
+            if (!$input->getOption('verbose')) {
+                $logger->setLevel(OutputLogger::ALL ^ OutputLogger::DEBUG);
             }
 
-            return;
+            if ($input->getOption('dry-run')) {
+                $changeSet = $updater->getChangeSet($config);
+
+                $output->writeln('Added Messages: '.implode(', ', array_keys($changeSet->getAddedMessages())));
+
+                if ($config->isKeepOldMessages()) {
+                    $output->writeln('Deleted Messages: # none as "Keep Old Translations" is true #');
+                } else {
+                    $output->writeln('Deleted Messages: '.implode(', ', array_keys($changeSet->getDeletedMessages())));
+                }
+
+                return;
+            }
+
+            $updater->process($config);
         }
 
-        $updater->process($config);
+		$this->cacheClear($output);
 
-        $output->writeln('done!');
-    }
+		$output->writeln('done!');
+	}
 
-    private function getConfigFromInput(InputInterface $input, ConfigBuilder $builder)
+    private function updateWithInput(InputInterface $input, ConfigBuilder $builder)
     {
         if ($bundle = $input->getOption('bundle')) {
             if ('@' === $bundle[0]) {
@@ -172,8 +190,23 @@ class ExtractTranslationCommand extends ContainerAwareCommand
             $builder->setLoadResources($loadResource);
         }
 
-        $builder->setLocale($input->getArgument('locale'));
-
-        return $builder->getConfig();
+		if ($input->hasParameterOption('--merge') || $input->hasParameterOption('--merge=true')) {
+			$builder->setDoMerge(true);
+		} else if ($input->hasParameterOption('--merge=false')) {
+			$builder->setDoMerge(false);
+		}
     }
+
+	protected function cacheClear(OutputInterface $output)
+	{
+		$command = $this->getApplication()->find('cache:clear');
+
+		$arguments = array(
+			'command' => 'cache:clear',
+			'--no-warmup' => true,
+		);
+
+		$input = new ArrayInput($arguments);
+		$returnCode = $command->run($input, $output);
+	}
 }

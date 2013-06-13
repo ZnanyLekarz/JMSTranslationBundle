@@ -1,5 +1,5 @@
 {
-    "name":         "jms/translation-bundle",
+    "name":         "znanylekarz/translation-bundle",
     "description":  "Puts the Symfony2 Translation Component on steroids",
     "keywords":     ["translation", "multilanguage", "extract", "webinterface", "ui", "i18n", "extraction", "interface"],
     "homepage":     "http://jmsyst.com/bundles/JMSTranslationBundle",
@@ -13,9 +13,12 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "symfony/framework-bundle": ">=2.1,<2.2-dev",
+        "symfony/framework-bundle": ">=2.1,<2.3-dev",
         "nikic/php-parser": "0.9.1",
         "symfony/console": "*"
+    },
+    "conflict": {
+        "twig/twig": "1.10.2"
     },
     "require-dev": {
         "symfony/twig-bundle": "*",
