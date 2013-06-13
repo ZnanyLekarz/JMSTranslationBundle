@@ -20,6 +20,9 @@
     "conflict": {
         "twig/twig": "1.10.2"
     },
+    "replace": {
+        "jms/translation-bundle": "1.*"
+    },    
     "require-dev": {
         "symfony/twig-bundle": "*",
         "symfony/browser-kit": "*",
