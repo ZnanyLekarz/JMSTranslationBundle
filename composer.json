@@ -13,8 +13,8 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "symfony/framework-bundle": ">=2.1,<2.3-dev",
-        "nikic/php-parser": "0.9.1",
+        "symfony/framework-bundle": "~2.1",
+        "nikic/php-parser": "0.9.2",
         "symfony/console": "*"
     },
     "conflict": {
@@ -32,7 +32,7 @@
         "symfony/process": "*",
         "symfony/yaml": "*",
         "sensio/framework-extra-bundle": "*",
-        "jms/di-extra-bundle": "*"
+        "jms/di-extra-bundle": ">=1.1"
     },
     "autoload": {
         "psr-0": { "JMS\\TranslationBundle": "" }

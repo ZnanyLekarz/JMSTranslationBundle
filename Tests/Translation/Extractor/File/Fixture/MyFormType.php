@@ -55,6 +55,21 @@ class MyFormType extends AbstractType
                 'label' => 'form.label.zip',
                 'translation_domain' => 'address'
             ))
+            ->add('field_with_placeholder', 'text', array(
+            	'label' => 'field.with.placeholder',
+	            'attr' => array('placeholder' => /** @Desc("Field with a placeholder value") */ 'form.placeholder.text')
+            ))
+            ->add('field_without_label', 'text', array(
+            	'label' => false,
+	            'attr' => array('placeholder' => /** @Desc("Field with a placeholder but no label") */ 'form.placeholder.text.but.no.label')
+            ))
         ;
+        $child = $builder->create('created', 'text', array(
+                  'label' => 'form.label.created'
+              ))
+        ;
+        $builder->add('dueDate','date', array(
+                'empty_value' => array('year' => 'form.dueDate.empty.year', 'month' => 'form.dueDate.empty.month', 'day'=>'form.dueDate.empty.day')
+        ));
     }
 }
