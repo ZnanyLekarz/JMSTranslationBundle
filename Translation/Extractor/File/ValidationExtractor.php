@@ -20,6 +20,7 @@ namespace JMS\TranslationBundle\Translation\Extractor\File;
 
 use JMS\TranslationBundle\Model\Message;
 use Symfony\Component\Validator\Mapping\ClassMetadataFactoryInterface;
+use Symfony\Component\Validator\MetadataFactoryInterface;
 use JMS\TranslationBundle\Model\MessageCatalogue;
 use JMS\TranslationBundle\Translation\Extractor\FileVisitorInterface;
 
@@ -30,22 +31,17 @@ use JMS\TranslationBundle\Translation\Extractor\FileVisitorInterface;
  */
 class ValidationExtractor implements FileVisitorInterface, \PHPParser_NodeVisitor
 {
-    private $messageProperties = array('message', 'minMessage', 'maxMessage', 'multipleMessage',
-                                       'extractFieldsMessage', 'missingFieldsMessage', 'notFoundMessage',
-                                       'notReadableMessage', 'maxSizeMessage', 'mimeTypesMessage',
-                                       'uplaodIniSizeErrorMessage', 'uploadFormSizeErrorMessage',
-                                       'uploadErrorMessage', 'mimeTypesMessage', 'sizeNotDetectedMessage',
-                                       'maxWidthMessage', 'maxWidthMessage', 'minWidthMessage', 'maxHeightMessage',
-                                       'minHeightMessage', 'invalidMessage',);
-
     private $metadataFactory;
     private $traverser;
     private $file;
     private $catalogue;
     private $namespace = '';
 
-    public function __construct(ClassMetadataFactoryInterface $metadataFactory)
+    public function __construct($metadataFactory)
     {
+        if (! ($metadataFactory instanceOf MetadataFactoryInterface || $metadataFactory instanceOf ClassMetadataFactoryInterface) ) {
+            throw new \InvalidArgumentException(sprintf('%s expects an instance of MetadataFactoryInterface or ClassMetadataFactoryInterface', get_class($this)));
+        }
         $this->metadataFactory = $metadataFactory;
 
         $this->traverser = new \PHPParser_NodeTraverser();
@@ -70,9 +66,8 @@ class ValidationExtractor implements FileVisitorInterface, \PHPParser_NodeVisito
             return;
         }
 
-        $metadata = $this->metadataFactory->getClassMetadata($name);
-
-        if (empty($metadata->constraints) && empty($metadata->members)) {
+        $metadata = ($this->metadataFactory instanceOf ClassMetadataFactoryInterface)? $this->metadataFactory->getClassMetadata($name) : $this->metadataFactory->getMetadataFor($name);
+        if (!$metadata->hasConstraints() && !count($metadata->getConstrainedProperties())) {
             return;
         }
 
@@ -104,10 +99,18 @@ class ValidationExtractor implements FileVisitorInterface, \PHPParser_NodeVisito
             $ref = new \ReflectionClass($constraint);
             $defaultValues = $ref->getDefaultProperties();
 
-            foreach ($this->messageProperties as $prop) {
-                if ($ref->hasProperty($prop) && $defaultValues[$prop] !== $constraint->$prop) {
-                    $message = new Message($constraint->$prop, 'validators');
-                    $this->catalogue->add($message);
+            $properties = $ref->getProperties();
+
+            foreach ($properties as $property) {
+                $propName = $property->getName();
+
+                // If the property ends with 'Message'
+                if (strtolower(substr($propName, -1 * strlen('Message'))) === 'message') {
+                    // If it is different from the default value
+                    if ($defaultValues[$propName] !== $constraint->{$propName}) {
+                        $message = new Message($constraint->{$propName}, 'validators');
+                        $this->catalogue->add($message);
+                    }
                 }
             }
         }
