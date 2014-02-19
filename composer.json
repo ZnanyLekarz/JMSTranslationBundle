@@ -20,7 +20,7 @@
     "conflict": {
         "twig/twig": "1.10.2"
     },
-    "replace": {
+    "provide": {
         "jms/translation-bundle": "1.*"
     },    
     "require-dev": {
