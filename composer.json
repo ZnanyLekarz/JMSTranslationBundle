@@ -21,7 +21,7 @@
         "twig/twig": "1.10.2"
     },
     "provide": {
-        "jms/translation-bundle": "1.*"
+        "jms/translation-bundle": "1.*@dev"
     },    
     "require-dev": {
         "symfony/twig-bundle": "*",
